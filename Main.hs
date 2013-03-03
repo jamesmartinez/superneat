@@ -59,7 +59,5 @@ uploadPost = do
     decodeBody (defaultBodyPolicy "/tmp/" (10*10^8) 1000 1000)
     (p,n,ct) <- lookFile "file_upload"
     liftIO $ copyFile p ("static/" ++ n)
-    ok $ toResponse $ template "ok" $ toHtml $ do
+    ok $ toResponse $ template "ok" $ toHtml $
         H.a ! A.href "static/" $ "Gallery"
-        
-    
