@@ -56,7 +56,7 @@ uploadForm =
                H.input ! A.type_ "submit" ! A.value "Upload"
 
 uploadPost = do
-    decodeBody (defaultBodyPolicy "tmp/" (10*10^8) 1000 1000)
+    decodeBody (defaultBodyPolicy "/tmp/" (10*10^8) 1000 1000)
     (p,n,ct) <- lookFile "file_upload"
     liftIO $ renameFile p ("static/" ++ n)
     ok $ toResponse $ template "ok" $ toHtml $ do
