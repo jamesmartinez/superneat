@@ -22,4 +22,6 @@ executable superneat
                        blaze-html,
                        blaze-markup,
                        happstack-server,
-                       text >=0.11
+                       text >=0.11,
+                       directory,
+                       mtl

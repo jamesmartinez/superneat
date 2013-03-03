@@ -3,7 +3,7 @@ module Main where
 
 import Data.Text
 import Control.Monad
-import Control.Applicative
+import Control.Monad.Trans (MonadIO(liftIO))
 import Happstack.Server ( nullConf,
                           simpleHTTP,
                           toResponse,
@@ -16,14 +16,16 @@ import Happstack.Server ( nullConf,
                           Browsing (..),
                           lookFile,
                           decodeBody,
-                          defaultBodyPolicy
+                          defaultBodyPolicy,
+                          
                         )
 import Text.Blaze ((!))
 import Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import System.Directory (renameFile)
 
 main = simpleHTTP nullConf $ msum
-         [ dir "static" $ serveDirectory DisableBrowsing [] "static"
+         [ dir "static" $ serveDirectory EnableBrowsing [] "static"
          , dir "upload" $ method GET  >> (ok . toResponse $ upload) 
          , dir "upload" $ do
              method POST
@@ -54,7 +56,10 @@ uploadForm =
                H.input ! A.type_ "submit" ! A.value "Upload"
 
 uploadPost = do
-    decodeBody (defaultBodyPolicy "/tmp/" (10*10^6) 1000 1000)
-    f <- lookFile "file_upload"
-    ok $ toResponse $ shortBody "ok" (pack . show $ f)
+    decodeBody (defaultBodyPolicy "tmp/" (10*10^8) 1000 1000)
+    (p,n,ct) <- lookFile "file_upload"
+    liftIO $ renameFile p ("static/" ++ n)
+    ok $ toResponse $ template "ok" $ toHtml $ do
+        H.a ! A.href "static/" $ "Gallery"
+        
     
