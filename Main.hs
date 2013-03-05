@@ -2,7 +2,9 @@
 module Main where
 
 import Data.Text
+import Data.ByteString as B
 import qualified Network.HTTP as C
+import qualified Network.HTTP.Base as C
 import System.FilePath
 import Network.URI
 import Control.Monad
@@ -83,19 +85,19 @@ uploadForm =
 uploadPost = do
     decodeBody (defaultBodyPolicy "/tmp/" (10*10^8) 1000 1000)
     (p,n,ct) <- lookFile "file_upload"
-    liftIO $ copyFile p ("static/" ++ n)
+    liftIO $ print p
+    case n of
+        "" -> return ()
+        _  -> liftIO $ copyFile p ("static/" ++ n)
 
     u <- look "image_url" 
     case parseURI u of
-        Nothing    -> return ()
+        Nothing    -> return () -- URL doesn't parse
         Just valid -> do
-            mf <- liftIO $ getUrl u
-            case mf of
-                Left err -> return () -- Couldn't fetch the file
-                Right f  -> do
-                    liftIO $ writeFile (C.rspBody f) . takeFileName . uriPath $ valid
+            mf <- liftIO $ getUrl valid
+            liftIO $ (B.writeFile . ("static/" ++) . takeFileName . uriPath $ valid) mf
             
     ok $ toResponse $ template "ok" $ toHtml $
         H.a ! A.href "static/" $ "Gallery"
 
-getUrl u = C.simpleHTTP (C.getRequest u)
+getUrl u = C.simpleHTTP (C.defaultGETRequest_ u) >>= C.getResponseBody
