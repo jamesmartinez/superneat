@@ -26,4 +26,5 @@ executable superneat
                        directory,
                        mtl,
                        filepath,
-                       network
+                       network,
+                       HTTP
