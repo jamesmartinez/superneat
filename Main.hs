@@ -52,11 +52,13 @@ uploadForm =
     H.form ! A.enctype "multipart/form-data"
            ! A.method  "POST"
            ! A.action  "/upload" $ do
+               H.label "Description"
                H.textarea "" ! A.placeholder "please type a description"
                              ! A.name "description"
                              ! A.rows "3"
                              ! A.cols "50" 
                H.br
+               H.label "Image"
                H.input ! A.type_ "file" ! A.name "file_upload" ! A.size "40"
                H.input ! A.type_ "submit" ! A.value "Upload"
 
