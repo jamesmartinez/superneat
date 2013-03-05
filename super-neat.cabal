@@ -28,4 +28,7 @@ executable superneat
                        filepath,
                        network,
                        HTTP,
-                       bytestring
+                       bytestring,
+                       safecopy,
+                       ixset,
+                       acid-state

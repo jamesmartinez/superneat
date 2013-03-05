@@ -1,35 +1,49 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, RecordWildCards
+, TemplateHaskell, TypeFamilies, OverloadedStrings #-}
 module Main where
 
-import Data.Text
+import Control.Applicative  ((<$>), optional)
+import Control.Exception    (bracket)
+import Control.Monad        (msum, mzero) 
+import Control.Monad.Reader (ask)
+import Control.Monad.State  (get, put)
+import Control.Monad.Trans  (MonadIO(liftIO))
+import Data.Acid            (AcidState, Update, Query, makeAcidic, openLocalState)
+import Data.Acid.Advanced   (update', query')
+import Data.Acid.Local      (createCheckpointAndClose)
 import Data.ByteString as B
-import qualified Network.HTTP as C
-import qualified Network.HTTP.Base as C
-import System.FilePath
-import Network.URI
-import Control.Monad
-import Control.Applicative
-import Control.Monad.Trans (MonadIO(liftIO))
-import Happstack.Server ( nullConf,
-                          simpleHTTP,
-                          toResponse,
-                          ok,
-                          dir ,
-                          method,
-                          Method(..),
-                          nullDir,
-                          serveDirectory,
-                          Browsing (..),
-                          look,
-                          lookFile,
-                          decodeBody,
-                          defaultBodyPolicy,
-                          
-                        )
 import Text.Blaze ((!))
 import Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import Data.Data	    (Data, Typeable)
+import Data.IxSet           ( Indexable(..), IxSet(..), (@=), Proxy(..), getOne
+                            , ixFun, ixSet )
+import qualified Data.IxSet as IxSet
+import Data.SafeCopy        (SafeCopy, base, deriveSafeCopy)
+import Data.Text            (Text)
+import qualified Data.Text as Text
+import Data.Text.Lazy       (toStrict)
+import Happstack.Server     ( nullConf,
+                             simpleHTTP,
+                             toResponse,
+                             ok,
+                             dir ,
+                             method,
+                             Method(..),
+                             nullDir,
+                             serveDirectory,
+                             Browsing (..),
+                             look,
+                             lookFile,
+                             decodeBody,
+                             defaultBodyPolicy,
+                          
+                           )
+import qualified Network.HTTP as C
+import qualified Network.HTTP.Base as C
+import Network.URI
 import System.Directory (copyFile)
+import System.FilePath
 
 main = simpleHTTP nullConf $ msum
          [ dir "static" $ serveDirectory EnableBrowsing [] "static"
@@ -39,8 +53,46 @@ main = simpleHTTP nullConf $ msum
              uploadPost
          , nullDir >> (ok . toResponse $ front) ] 
 
+newtype PinId = PinId { unPinId :: Integer }
+    deriving (EQ, Ord, Data, Enum, Typeable, SafeCopy)
 
+data Status =
+    Unpublished
+  | Published 
+    deriving (Eq, Ord, Data, Typeable)
 
+$(deriveSafeCopy 0 'base ''Status)
+      
+data Pin = Pin
+    { pinId       :: PinId
+    , user        :: Text
+    , description :: Text
+    , date        :: UTCTime 
+    , category    :: Text
+    , image       :: Text
+    , status      :: Status
+    }
+    deriving (Eq, Ord, Data, Typeable)
+
+$(deriveSafeCopy 0 'base ''Pin)
+
+newtype Category    = Category Text    deriving (Eq, Ord, Data, Typeable, SafeCopy)
+newtype Description = Description Text deriving (Eq, Ord, Data, Typeable, SafeCopy)
+newtype User        = User Text        deriving (Eq, Ord, Data, Typeable, SafeCopy)
+newtype Image       = Image Text       deriving (Eq, ord, Data, Typeable, SafeCopy) 
+
+instance Indexable Pin where
+    empty = ixSet [ ixFun $ \bp -> [ pinId bp ]
+                  , ixFun $ \bp -> [ Description $ description bp ]
+                  , ixFun $ \bp -> [ User $ user bp ]
+                  , ixFun $ \bp -> [ status bp ]
+                  , ixFun $ \bp -> map Category (categories bp)
+                  , ixFun $ (:[]) . date 
+                  ] 
+
+ixFun :: (Ord b, Typeable b) => (a -> [b]) -> Ix a
+
+data Pin = Pin 
 upload = template "Upload" $ uploadForm
 
 front = template "test" $ H.toHtml ("Hello, welcome to our page" :: Text)
