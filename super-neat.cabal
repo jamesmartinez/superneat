@@ -24,4 +24,6 @@ executable superneat
                        happstack-server,
                        text >=0.11,
                        directory,
-                       mtl
+                       mtl,
+                       filepath,
+                       network
