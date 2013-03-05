@@ -58,6 +58,15 @@ uploadForm =
                              ! A.rows "3"
                              ! A.cols "50" 
                H.br
+               H.label "Category"
+               H.select ! A.id "categoryList"
+                        ! A.size "3"
+                        ! A.name "categories"
+                        ! A.multiple "multiple" $ do
+                   H.option "Beer" ! A.value "Beer"
+                   H.option "Women" ! A.value "Women"
+                   H.option "Humor" ! A.value "Humor" 
+               H.br
                H.label "Image"
                H.input ! A.type_ "file" ! A.name "file_upload" ! A.size "40"
                H.input ! A.type_ "submit" ! A.value "Upload"
