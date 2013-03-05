@@ -16,7 +16,7 @@ cabal-version:       >=1.8
 
 executable superneat
   main-is:             Main.hs
-  -- other-modules:       
+  other-modules:       Pin
   build-depends:       base >=4.5.0 && <4.7,
                        happstack ==7.0.*,
                        blaze-html,
