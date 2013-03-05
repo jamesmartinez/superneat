@@ -1,100 +1,81 @@
-{-# LANGUAGE TemplateHaskell, DeriveDataTypeable, GeneralizedNewtypeDeriving, RecordWildCards, TypeFamilies #-}
+{-# LANGUAGE TemplateHaskell, DeriveDataTypeable, GeneralizedNewtypeDeriving, RecordWildCards, TypeFamilies, EmptyDataDecls #-}
 module Types.Pin where
-       
-import Data.Data (Typeable, Data)
+
+import Data.Text as Text (Text, empty)
+import Data.Time.Clock (UTCTime)
+import Data.Data (Typeable)
 import Data.SafeCopy (SafeCopy, deriveSafeCopy, base)
-import Data.Text (Text)
-import qualified Data.Text as T (empty)
-import Data.Time.Clock
-import Data.IxSet           ( Indexable(..), IxSet, (@=), Proxy(..), getOne
-                            , ixFun, ixSet, toDescList, insert, updateIx )
+import Control.Monad.State (get, put)
 import Control.Monad.Reader (ask)
-import Data.Acid            (AcidState, Update, Query, makeAcidic, openLocalState)
-import Control.Monad.State  (get, put)
+import Data.IxSet as IxSet (Indexable, IxSet, empty, ixSet, ixFun, insert, (@=), getOne, updateIx)
+
+
+newtype UserId = UserId { unUserId :: Integer }
+               deriving (Eq, Ord, Num, Typeable, SafeCopy)
+
+newtype UserToken = UserToken Text
+                  deriving (Eq, Ord, SafeCopy)
 
 newtype PinId = PinId { unPinId :: Integer }
-    deriving (Eq, Ord, Data, Enum, Typeable, SafeCopy)
-     
-data Status =
-    Unpublished
-  | Published
-    deriving (Eq, Ord, Data, Typeable)
+              deriving (Eq, Ord, Enum, Typeable, SafeCopy)
 
-$(deriveSafeCopy 0 'base ''Status)
- 
-data Pin = Pin
-    { pinId       :: PinId
-    , user        :: Text
-    , description :: Text
-    , date        :: UTCTime 
-    , categories  :: [Text]
-    , image       :: Text
-    , status      :: Status
-    }
-    deriving (Eq, Ord, Data, Typeable)
+newtype PinCategory = PinCategory Text
+                      deriving (Eq, Ord, Typeable, SafeCopy)
+
+data Visibility   = Visible | Hidden
+                  deriving (Eq, Ord)
+$(deriveSafeCopy 0 'base ''Visibility)
+
+data User = User { userId   :: UserId
+                 , token    :: UserToken
+                 , nickname :: Text
+                 , joined   :: UTCTime }
+            deriving (Eq, Ord)
+$(deriveSafeCopy 0 'base ''User)
+
+instance Indexable User where
+  empty = ixSet . map ixFun $ [ \u -> [ userId u ] ]
+  
+data Pin = Pin { pinId       :: PinId
+               , owner       :: UserId
+               , description :: Text
+               , date        :: UTCTime 
+               , categories  :: [PinCategory]
+               , visibility  :: Visibility
+               }
+         deriving (Eq, Ord, Typeable)
 
 $(deriveSafeCopy 0 'base ''Pin)
 
-newtype Category    = Category Text    deriving (Eq, Ord, Data, Typeable, SafeCopy)
-newtype Description = Description Text deriving (Eq, Ord, Data, Typeable, SafeCopy)
-newtype User        = User Text        deriving (Eq, Ord, Data, Typeable, SafeCopy)
-newtype Image       = Image Text       deriving (Eq, Ord, Data, Typeable, SafeCopy) 
 
 instance Indexable Pin where
-    empty = ixSet [ ixFun $ \p -> [ pinId p ]]
+    empty = ixSet $
+             [ ixFun $ \p -> [ pinId      p ]
+             , ixFun $ \p -> [ owner      p ]
+             , ixFun $ \p -> [ date       p ]
+             , ixFun $ \p -> [ categories p ]
+             ]
 
-
-data Pins = Pins
-    { nextPinId :: PinId
-    , pins      :: IxSet Pin
-    }
-    deriving (Data, Typeable)
+data Pins = Pins { nextPinId :: PinId
+                 , pins      :: IxSet Pin }
 
 $(deriveSafeCopy 0 'base ''Pins)
 
-initialPinsState :: Pins
-initialPinsState =
-    Pins { nextPinId = PinId 1
-         ,  pins = empty
-         }
+newPin pubDate = do
+    ps@Pins{..} <- get
+    let pin = Pin { pinId       = nextPinId
+                  , owner       = 1
+                  , description = Text.empty
+                  , date        = pubDate
+                  , categories  = []
+                  , visibility  = Visible }
 
-newPin :: UTCTime -> Update Pins Pin
-newPin pubDate =
-    do b@Pins{..} <- get
-       let pin = Pin { pinId = nextPinId
-                     , description = T.empty
-                     , user        = T.empty
-                     , date        = pubDate
-                     , status      = Unpublished
-                     , categories  = []
-                     }
-       put $ b { nextPinId = succ nextPinId 
-               , pins      = insert pin pins
-               }
-       return pin
+    put ps { nextPinId = succ nextPinId , pins = IxSet.insert pin pins }
 
-updatePin :: Pin -> Update Pins ()
-updatePin updatedPin =
-    do b@Pins{..} <- get
-       put $ b { pins = updateIx (pinId updatedPin) updatedPin pins
-               }
+updatePin pin = do
+    ps@Pins{..} <- get
+    put ps { pins = IxSet.updateIx (pinId pin) pin pins } -- Try saying that three times fast
 
-pinById :: PinId -> Query Pins (Maybe Pin)
-pinById pid =
-    do Pins{..} <- ask
-       return $ getOne $ pins @= pid
-
-pinsByStatus :: Status -> Query Pins [Pin]
-pinsByStatus status =
-    do Pins{..} <- ask
-       return $ toDescList (Proxy :: Proxy UTCTime) $ pins @= status
-
-
-
-$(makeAcidic ''Pins
-  [ 'newPin
-  , 'updatePin
-  , 'pinById
-  , 'pinsByStatus
-  ])
-    
+pinById pid = do
+    Pins{..} <- ask
+    return . getOne $ pins @= pid
