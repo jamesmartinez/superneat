@@ -67,9 +67,13 @@ uploadForm =
                    H.option "Women" ! A.value "Women"
                    H.option "Humor" ! A.value "Humor" 
                H.br
-               H.label "Image"
+               H.label "URL"
+               H.input ! A.type_ "text" ! A.name "image_url" ! A.size "40"
+               H.br
+               H.label "Upload Image"
                H.input ! A.type_ "file" ! A.name "file_upload" ! A.size "40"
-               H.input ! A.type_ "submit" ! A.value "Upload"
+               H.br
+               H.input ! A.type_ "submit" ! A.value "Submit"
 
 uploadPost = do
     decodeBody (defaultBodyPolicy "/tmp/" (10*10^8) 1000 1000)
