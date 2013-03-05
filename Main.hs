@@ -2,7 +2,11 @@
 module Main where
 
 import Data.Text
+import qualified Network.HTTP as C
+import System.FilePath
+import Network.URI
 import Control.Monad
+import Control.Applicative
 import Control.Monad.Trans (MonadIO(liftIO))
 import Happstack.Server ( nullConf,
                           simpleHTTP,
@@ -14,6 +18,7 @@ import Happstack.Server ( nullConf,
                           nullDir,
                           serveDirectory,
                           Browsing (..),
+                          look,
                           lookFile,
                           decodeBody,
                           defaultBodyPolicy,
@@ -79,5 +84,18 @@ uploadPost = do
     decodeBody (defaultBodyPolicy "/tmp/" (10*10^8) 1000 1000)
     (p,n,ct) <- lookFile "file_upload"
     liftIO $ copyFile p ("static/" ++ n)
+
+    u <- look "image_url" 
+    case parseURI u of
+        Nothing    -> return ()
+        Just valid -> do
+            mf <- liftIO $ getUrl u
+            case mf of
+                Left err -> return () -- Couldn't fetch the file
+                Right f  -> do
+                    liftIO $ writeFile (C.rspBody f) . takeFileName . uriPath $ valid
+            
     ok $ toResponse $ template "ok" $ toHtml $
         H.a ! A.href "static/" $ "Gallery"
+
+getUrl u = C.simpleHTTP (C.getRequest u)
