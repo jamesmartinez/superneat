@@ -38,7 +38,7 @@ import Happstack.Server     ( nullConf,
                              decodeBody,
                              defaultBodyPolicy,
                           
-                           )
+                            )
 import qualified Network.HTTP as C
 import qualified Network.HTTP.Base as C
 import Network.URI
@@ -53,112 +53,7 @@ main = simpleHTTP nullConf $ msum
              uploadPost
          , nullDir >> (ok . toResponse $ front) ] 
 
-newtype PinId = PinId { unPinId :: Integer }
-    deriving (EQ, Ord, Data, Enum, Typeable, SafeCopy)
 
-data Status =
-    Unpublished
-  | Published 
-    deriving (Eq, Ord, Data, Typeable)
-
-$(deriveSafeCopy 0 'base ''Status)
-      
-data Pin = Pin
-    { pinId       :: PinId
-    , user        :: Text
-    , description :: Text
-    , date        :: UTCTime 
-    , category    :: Text
-    , image       :: Text
-    , status      :: Status
-    }
-    deriving (Eq, Ord, Data, Typeable)
-
-$(deriveSafeCopy 0 'base ''Pin)
-
-newtype Category    = Category Text    deriving (Eq, Ord, Data, Typeable, SafeCopy)
-newtype Description = Description Text deriving (Eq, Ord, Data, Typeable, SafeCopy)
-newtype User        = User Text        deriving (Eq, Ord, Data, Typeable, SafeCopy)
-newtype Image       = Image Text       deriving (Eq, ord, Data, Typeable, SafeCopy) 
-
-instance Indexable Pin where
-    empty = ixSet [ ixFun $ \bp -> [ pinId bp ]
-                  , ixFun $ \bp -> [ Description $ description bp ]
-                  , ixFun $ \bp -> [ User $ user bp ]
-                  , ixFun $ \bp -> [ status bp ]
-                  , ixFun $ \bp -> map Category (categories bp)
-                  , ixFun $ (:[]) . date 
-                  ] 
-
-ixFun :: (Ord b, Typeable b) => (a -> [b]) -> Ix a
-
-data Pins = Pins
-    { nextPinId :: PinId
-    , pins      :: IxSet Pin
-    }
-    deriving (Data, Typeable)
-
-$(deriveSafeCopy 0 'base ''Pins)
-
-initialPinsState :: Pins
-initialPinsState =
-    Pins { nextPinId = PinId 1
-         ,  pins = empty
-         }
-
-newPin :: UTCTime -> Update Pins Pin
-newPin :: pubDate =
-    do b@Pins{..} <- get
-       let pin = Pin { pinId = nextPinId
-                     , description = Text.empty
-                     , user        = Text.empty
-                     , date        = pubDate
-                     , status      = Unpublished
-                     , categories  = []
-                     }
-       put $ b { nextPinId = succ nextPinId 
-               , pins      = IxSet.insert pin pins
-       return pin
-
-insert :: (Typeable a, Ord a, Indexable a) => a -> IxSet a -> IxSet a
-
-updatePin :: Pin -> Update Pins ()
-updatePin updatedPin =
-    do b@Pins{..} <- get
-       put $ b { pins = IxSet.updateIx (pinId updedPin) updatedPin pins
-               }
-
-updateIx :: (Indexable a, Ord a, Typeable a, Typeable key) =>
-            key
-         -> a
-         -> IxSet a
-         -> IxSet a
-
-pinById :: PinId -> Query Pins (Maybe Pin)
-pinById pid =
-    do Pins{..} <- ask
-       return $ getOne $ pins @= pid
-
-(@=) :: (Typeable key, Ord a, Typeable a, Indexable a) => IxSet a -> key -> IxSet a
-
-getOne :: Ord a => IxSet a -> Maybe a
-
-pinsByStatus :: Status -> Query Pins [Pin]
-pinsByStatus status =
-    do Pins{..} <- ask
-       return $ IxSet.toDescList (Proxy :: Proxy UTCTime) $ pins @= status
-
-toDescList :: (Typeable k, Typeable a, Indexable a) => Proxy k -> IxSet a -> [a]
-
-data Proxy a = Proxy
-
-$(makeAcidid ''Pins
-  [ 'newPin
-  , 'updatePin
-  , 'pinById
-  , 'pinsByStatus
-  ])
-    
 upload = template "Upload" $ uploadForm
 
 front = template "test" $ H.toHtml ("Hello, welcome to our page" :: Text)
@@ -219,3 +114,111 @@ uploadPost = do
         H.a ! A.href "static/" $ "Gallery"
 
 getUrl u = C.simpleHTTP (C.defaultGETRequest_ u) >>= C.getResponseBody
+
+newtype PinId = PinId { unPinId :: Integer }
+    deriving (Eq, Ord, Data, Enum, Typeable, SafeCopy)
+     
+data Status =
+    Unpublished
+  | Published
+    deriving (Eq, Ord, Data, Typeable)
+
+$(deriveSafeCopy 0 'base ''Status)
+ 
+data Pin = Pin
+    { pinId       :: PinId
+    , user        :: Text
+    , description :: Text
+    , date        :: UTCTime 
+    , category    :: Text
+    , image       :: Text
+    , status      :: Status
+    }
+    deriving (Eq, Ord, Data, Typeable)
+
+$(deriveSafeCopy 0 'base ''Pin)
+
+newtype Category    = Category Text    deriving (Eq, Ord, Data, Typeable, SafeCopy)
+newtype Description = Description Text deriving (Eq, Ord, Data, Typeable, SafeCopy)
+newtype User        = User Text        deriving (Eq, Ord, Data, Typeable, SafeCopy)
+newtype Image       = Image Text       deriving (Eq, ord, Data, Typeable, SafeCopy) 
+
+instance Indexable Pin where
+    empty = ixSet [ ixFun $ \bp -> [ pinId bp ]
+                  , ixFun $ \bp -> [ Description $ description bp ]
+                  , ixFun $ \bp -> [ User $ user bp ]
+                  , ixFun $ \bp -> [ status bp ]
+                  , ixFun $ \bp -> map Category (categories bp)
+                  , ixFun $ (:[]) . date 
+                  ] 
+
+ixFun :: (Ord b, Typeable b) => (a -> [b]) -> Ix a
+
+data Pins = Pins
+    { nextPinId :: PinId
+    , pins      :: IxSet Pin
+    }
+    deriving (Data, Typeable)
+
+$(deriveSafeCopy 0 'base ''Pins)
+
+initialPinsState :: Pins
+initialPinsState =
+    Pins { nextPinId = PinId 1
+         ,  pins = empty
+         }
+
+newPin :: UTCTime -> Update Pins Pin
+newPin :: pubDate =
+    do b@Pins{..} <- get
+       let pin = Pin { pinId = nextPinId
+                     , description = Text.empty
+                     , user        = Text.empty
+                     , date        = pubDate
+                     , status      = Unpublished
+                     , categories  = []
+                     }
+       put $ b { nextPinId = succ nextPinId 
+               , pins      = IxSet.insert pin pins
+               }
+       return pin
+
+insert :: (Typeable a, Ord a, Indexable a) => a -> IxSet a -> IxSet a
+
+updatePin :: Pin -> Update Pins ()
+updatePin updatedPin =
+    do b@Pins{..} <- get
+       put $ b { pins = IxSet.updateIx (pinId updedPin) updatedPin pins
+               }
+
+updateIx :: (Indexable a, Ord a, Typeable a, Typeable key) =>
+            key
+         -> a
+         -> IxSet a
+         -> IxSet a
+
+pinById :: PinId -> Query Pins (Maybe Pin)
+pinById pid =
+    do Pins{..} <- ask
+       return $ getOne $ pins @= pid
+
+(@=) :: (Typeable key, Ord a, Typeable a, Indexable a) => IxSet a -> key -> IxSet a
+
+getOne :: Ord a => IxSet a -> Maybe a
+
+pinsByStatus :: Status -> Query Pins [Pin]
+pinsByStatus status =
+    do Pins{..} <- ask
+       return $ IxSet.toDescList (Proxy :: Proxy UTCTime) $ pins @= status
+
+toDescList :: (Typeable k, Typeable a, Indexable a) => Proxy k -> IxSet a -> [a]
+
+data Proxy a = Proxy
+
+$(makeAcidic ''Pins
+  [ 'newPin
+  , 'updatePin
+  , 'pinById
+  , 'pinsByStatus
+  ])
+    
