@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, RecordWildCards
 , TemplateHaskell, TypeFamilies, OverloadedStrings #-}
 module Main where
-
 import Control.Applicative  ((<$>), optional)
 import Control.Exception    (bracket)
 import Control.Monad        (msum, mzero) 
@@ -13,7 +12,7 @@ import Data.Acid.Advanced   (update', query')
 import Data.Acid.Local      (createCheckpointAndClose)
 import Data.ByteString as B
 import Text.Blaze ((!))
-import Text.Blaze.Html5 as H
+import Text.Blaze.Html5 as H hiding (base)
 import qualified Text.Blaze.Html5.Attributes as A
 import Data.Data	    (Data, Typeable)
 import Data.IxSet           ( Indexable(..), IxSet(..), (@=), Proxy(..), getOne
@@ -23,6 +22,7 @@ import Data.SafeCopy        (SafeCopy, base, deriveSafeCopy)
 import Data.Text            (Text)
 import qualified Data.Text as Text
 import Data.Text.Lazy       (toStrict)
+import Data.Time            (UTCTime(..), getCurrentTime)
 import Happstack.Server     ( nullConf,
                              simpleHTTP,
                              toResponse,
@@ -148,7 +148,7 @@ instance Indexable Pin where
                   , ixFun $ \bp -> [ Description $ description bp ]
                   , ixFun $ \bp -> [ User $ user bp ]
                   , ixFun $ \bp -> [ status bp ]
-                  , ixFun $ \bp -> map Category (categories bp)
+                  , ixFun $ \bp -> Prelude.map Category (categories bp)
                   , ixFun $ (:[]) . date 
                   ] 
 

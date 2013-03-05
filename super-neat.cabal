@@ -31,4 +31,5 @@ executable superneat
                        bytestring,
                        safecopy,
                        ixset,
-                       acid-state
+                       acid-state,
+                       time
