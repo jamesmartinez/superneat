@@ -6,9 +6,9 @@ import Control.Exception (bracket)
 import Data.Acid (openLocalState)
 import Data.Acid.Local (createCheckpointAndClose)
 
-import Upload
-import Layout
-import Pin (noPins)
+import Page.Upload
+import Page.Layout
+import Type.Pin (noPins)
 
 main = do
     bracket (openLocalState noPins) (createCheckpointAndClose) $

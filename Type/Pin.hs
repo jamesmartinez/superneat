@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, DeriveDataTypeable, GeneralizedNewtypeDeriving, RecordWildCards, TypeFamilies, EmptyDataDecls #-}
-module Pin where
+module Type.Pin where
 
 import Data.Text as Text (Text, empty)
 import Data.Time.Clock (UTCTime)

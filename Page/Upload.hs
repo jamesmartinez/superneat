@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE EmptyDataDecls #-}
-module Upload where
+module Page.Upload where
 
 
 import Control.Monad.Trans (liftIO, MonadIO)
@@ -14,8 +14,8 @@ import Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Data.Acid as Acid (query, update)
 import Data.Time.Clock
-import Layout
-import Pin
+import Page.Layout
+import Type.Pin
 
 upload = template "Upload" $ uploadForm
 
