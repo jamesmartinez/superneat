@@ -12,8 +12,10 @@ import System.Directory (copyFile)
 import System.FilePath
 import Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
-
+import Data.Acid as Acid (query, update)
+import Data.Time.Clock
 import Layout
+import Pin
 
 upload = template "Upload" $ uploadForm
 
@@ -44,8 +46,7 @@ uploadForm =
                H.br
                H.input ! A.type_ "submit" ! A.value "Submit"
 
-uploadPost :: ServerPartT IO Response
-uploadPost = do
+uploadPost acid = do
     decodeBody (defaultBodyPolicy "/tmp/" (10*10^8) 1000 1000)
     (p,n,ct) <- lookFile "file_upload"
     liftIO $ print p
@@ -58,6 +59,14 @@ uploadPost = do
         Nothing    -> return () -- URL doesn't parse
         Just valid -> do
             mf <- liftIO $ getUrl valid
+            x <- liftIO $ Acid.query acid AllPins
+            liftIO $ print . Prelude.map (unPinId . pinId) $ x
+            liftIO $ getCurrentTime >>= \t -> Acid.update acid $ NewPin Pin { pinId = 0
+                                                   , owner = 1
+                                                   , description = "test"
+                                                   , categories = []
+                                                   , date = t
+                                                   , visibility = Visible }
             liftIO $ (B.writeFile . ("static/" ++) . takeFileName . uriPath $ valid) mf
             
     ok $ toResponse $ template "ok" $ toHtml $

@@ -1,15 +1,16 @@
 {-# LANGUAGE TemplateHaskell, DeriveDataTypeable, GeneralizedNewtypeDeriving, RecordWildCards, TypeFamilies, EmptyDataDecls #-}
-module Types.Pin where
+module Pin where
 
 import Data.Text as Text (Text, empty)
 import Data.Time.Clock (UTCTime)
 import Data.Data (Typeable)
 import Data.SafeCopy (SafeCopy, deriveSafeCopy, base)
+import Data.Acid (Update, Query, makeAcidic)
 import Control.Monad.State (get, put)
 import Control.Monad.Reader (ask)
-import Data.IxSet as IxSet (Indexable, IxSet, empty, ixSet, ixFun, insert, (@=), getOne, updateIx)
+import Data.IxSet as IxSet (Indexable, IxSet, empty, ixSet, ixFun, insert, (@=), getOne, updateIx, toList)
 
-
+-- All the crunchy stuff
 newtype UserId = UserId { unUserId :: Integer }
                deriving (Eq, Ord, Num, Typeable, SafeCopy)
 
@@ -17,7 +18,7 @@ newtype UserToken = UserToken Text
                   deriving (Eq, Ord, SafeCopy)
 
 newtype PinId = PinId { unPinId :: Integer }
-              deriving (Eq, Ord, Enum, Typeable, SafeCopy)
+              deriving (Eq, Ord, Num, Enum, Typeable, SafeCopy)
 
 newtype PinCategory = PinCategory Text
                       deriving (Eq, Ord, Typeable, SafeCopy)
@@ -58,24 +59,40 @@ instance Indexable Pin where
 
 data Pins = Pins { nextPinId :: PinId
                  , pins      :: IxSet Pin }
+            deriving (Typeable)
 
 $(deriveSafeCopy 0 'base ''Pins)
 
-newPin pubDate = do
+
+-- Initial state
+noPins = Pins { nextPinId = 0, pins = ixSet [] }
+  
+--- Getters and setters
+
+-- Overwrites pinId, is this bad? 
+newPin :: Pin -> Update Pins ()  
+newPin pin = do
     ps@Pins{..} <- get
-    let pin = Pin { pinId       = nextPinId
-                  , owner       = 1
-                  , description = Text.empty
-                  , date        = pubDate
-                  , categories  = []
-                  , visibility  = Visible }
+    put ps { nextPinId = succ nextPinId
+           , pins      = IxSet.insert (pin {pinId = nextPinId}) pins
+           }
 
-    put ps { nextPinId = succ nextPinId , pins = IxSet.insert pin pins }
-
+updatePin :: Pin -> Update Pins ()
 updatePin pin = do
     ps@Pins{..} <- get
     put ps { pins = IxSet.updateIx (pinId pin) pin pins } -- Try saying that three times fast
 
+pinById :: PinId -> Query Pins (Maybe Pin)
 pinById pid = do
     Pins{..} <- ask
     return . getOne $ pins @= pid
+
+allPins :: Query Pins ([Pin])
+allPins = do
+    Pins{..} <- ask
+    return $ toList pins
+$(makeAcidic ''Pins [ 'newPin
+                    , 'updatePin
+                    , 'pinById
+                    , 'allPins
+                    ])
