@@ -71,10 +71,19 @@ noPins = Pins { nextPinId = 0, pins = ixSet [] }
 
 -- Overwrites pinId, is this bad? 
 newPin :: UserId -> Text -> [PinCategory] -> Visibility -> Update Pins ()
-newPin pin = do
+newPin owner description categories visibility = do
     ps@Pins{..} <- get
+
+    let pin = Pin { pinId = nextPinId
+                  , owner = owner
+                  , description = description
+                  , date = undefined
+                  , categories = categories
+                  , visibility = visibility 
+                  }
+
     put ps { nextPinId = succ nextPinId
-           , pins      = IxSet.insert (pin {pinId = nextPinId}) pins
+           , pins      = IxSet.insert pin pins
            }
 
 updatePin :: Pin -> Update Pins ()
