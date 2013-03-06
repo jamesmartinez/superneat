@@ -61,7 +61,7 @@ uploadPost acid = do
             mf <- liftIO $ getUrl valid
             x <- liftIO $ Acid.query acid AllPins
             liftIO $ print . Prelude.map (unPinId . pinId) $ x
-            liftIO $ getCurrentTime >>= \t -> Acid.update acid $ NewPin 1 "foo" [ PinCategory "Women"] Visible
+            liftIO $ getCurrentTime >>= \t -> Acid.update acid $ NewPin 1 "foo" t [ PinCategory "Women"] Visible
             liftIO $ (B.writeFile . ("static/" ++) . takeFileName . uriPath $ valid) mf
             
     ok $ toResponse $ template "ok" $ toHtml $

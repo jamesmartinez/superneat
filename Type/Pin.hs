@@ -70,14 +70,14 @@ noPins = Pins { nextPinId = 0, pins = ixSet [] }
 --- Getters and setters
 
 -- Overwrites pinId, is this bad? 
-newPin :: UserId -> Text -> [PinCategory] -> Visibility -> Update Pins ()
-newPin owner description categories visibility = do
+newPin :: UserId -> Text -> UTCTime -> [PinCategory] -> Visibility -> Update Pins ()
+newPin owner description date categories visibility = do
     ps@Pins{..} <- get
 
     let pin = Pin { pinId = nextPinId
                   , owner = owner
                   , description = description
-                  , date = undefined
+                  , date = date
                   , categories = categories
                   , visibility = visibility 
                   }
