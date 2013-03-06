@@ -70,7 +70,7 @@ noPins = Pins { nextPinId = 0, pins = ixSet [] }
 --- Getters and setters
 
 -- Overwrites pinId, is this bad? 
-newPin :: Pin -> Update Pins ()  
+newPin :: UserId -> Text -> [PinCategory] -> Visibility -> Update Pins ()
 newPin pin = do
     ps@Pins{..} <- get
     put ps { nextPinId = succ nextPinId
