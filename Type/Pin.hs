@@ -11,6 +11,7 @@ import Control.Monad.Reader (ask)
 import Data.IxSet as IxSet (Indexable, IxSet, empty, ixSet, ixFun, insert, (@=), getOne, updateIx, toList)
 
 -- All the crunchy stuff
+
 newtype UserId = UserId { unUserId :: Integer }
                deriving (Eq, Ord, Num, Typeable, SafeCopy)
 
