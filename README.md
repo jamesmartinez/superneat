@@ -1,4 +1,4 @@
-super-neat
+Superneat
 ==========
 
-a simple yesod web app
+A Happstack App like that of Pinterest
