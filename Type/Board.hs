@@ -1,5 +1,3 @@
-{-# LANGUAGE TemplateHaskell, DeriveDataTypeable, GeneralizedNewtypeDeriving, RecordWildCards, TypeFamilies, EmptyDataDecls #-}
-
 module Type.Board where
 
 import Type.Common
