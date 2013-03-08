@@ -12,3 +12,10 @@ import Data.IxSet as IxSet (Indexable, IxSet, empty, ixSet, ixFun, insert, (@=),
 
 -- All the crunchy stuff
 
+--this stuff should go in Type/Common.hs
+newtype UserId = UserId {unUserId :: Integer }
+               deriving (Eq, Ord, Num, Typeable, SafeCopy)
+newtype PinId = PinId { unPinId :: Integer }
+              deriving (Eq, Ord, Num, Enum, Typeable, Safecopy)
+
+data Board = Board { boardPins :: [PinId], boardOwner :: UserId, followers :: [UserId] }
