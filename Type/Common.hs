@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell, DeriveDataTypeable, GeneralizedNewtypeDeriving, RecordWildCards, TypeFamilies, EmptyDataDecls #-}
 module Type.Common where
 
 import Data.Text as Text (Text, empty)
