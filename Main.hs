@@ -3,15 +3,19 @@ module Main where
 import Control.Monad 
 import Happstack.Server
 import Control.Exception (bracket)
-import Data.Acid (openLocalState)
+import Data.Acid
+    ( openLocalState
+    , AcidState
+    , EventState )
 import Data.Acid.Local (createCheckpointAndClose)
 
 import Page.Upload
 import Page.Layout
-import Type.Pin (noPins)
+import Type.Superneat (Superneat, emptySuperneat)
 
 main = do
-    bracket (openLocalState noPins) (createCheckpointAndClose) $
+    putStrLn "opened!"
+    bracket (openLocalState emptySuperneat) (createCheckpointAndClose) $
         \acid -> simpleHTTP nullConf $ handlers acid
 
 handlers acid = msum
