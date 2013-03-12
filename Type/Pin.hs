@@ -3,7 +3,6 @@ module Type.Pin where
 
 import Type.Common
 import Type.User (UserId)
-import Data.Time.Clock (UTCTime)
 
 
 newtype PinId = PinId { unPinId :: Integer }
@@ -45,6 +44,4 @@ $(deriveSafeCopy 0 'base ''Pins)
 
 -- Initial state
 noPins :: Pins
-noPins = Pins { nextPinId = 0, pins = ixSet [] }
-
-$(makeAcidic ''Pins [])
+noPins = Pins { nextPinId = 0, pins = empty }

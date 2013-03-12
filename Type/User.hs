@@ -3,7 +3,6 @@
 module Type.User where
 
 import Type.Common
-import Data.Time.Clock (UTCTime)
 
 
 newtype UserId = UserId { unUserId :: Integer }
@@ -29,6 +28,4 @@ instance Indexable User where
 $(deriveSafeCopy 0 'base ''Users)
 
 noUsers :: Users
-noUsers = Users { nextUserId = 0, users = ixSet [] }
-
-$(makeAcidic ''Users [])
+noUsers = Users { nextUserId = 0, users = empty }

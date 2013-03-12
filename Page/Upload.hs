@@ -16,7 +16,7 @@ import Data.Acid as Acid (query, update)
 import Data.Time.Clock
 import Page.Layout
 import Type.Pin
-import Type.Query
+import Type.Superneat
 
 upload = template "Upload" $ uploadForm
 

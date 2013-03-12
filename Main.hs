@@ -11,7 +11,7 @@ import Data.Acid.Local (createCheckpointAndClose)
 
 import Page.Upload
 import Page.Layout
-import Type.Superneat (Superneat, emptySuperneat)
+import Type.Superneat (Superneat, emptySuperneat, AllPins, NewPin)
 
 main = do
     putStrLn "opened!"
