@@ -17,6 +17,8 @@ import Data.Time.Clock
 import Page.Layout
 import Type.Pin
 import Type.Superneat
+import Control.Lens
+import Data.Table
 
 upload = template "Upload" $ uploadForm
 
@@ -60,10 +62,11 @@ uploadPost acid = do
         Nothing    -> return () -- URL doesn't parse
         Just valid -> do
             mf <- liftIO $ getUrl valid
-            liftIO $ getCurrentTime >>= \t -> Acid.update acid $ NewPin 1 "foo" t [ PinCategory "Women"] Visible
+            liftIO $ getCurrentTime >>= \t -> Acid.update acid $
+                NewPin 1 (Description "foo") t [ PinCategory "Women"] Visible
             liftIO $ (B.writeFile . ("static/" ++) . takeFileName . uriPath $ valid) mf
             x <- liftIO $ Acid.query acid AllPins
-            liftIO $ print . Prelude.map (unPinId . pinId) $ x
+            liftIO $ print $ (x ^..rows.pinId & over mapped unPinId)
             
     ok $ toResponse $ template "ok" $ toHtml $
         H.a ! A.href "static/" $ "Gallery"

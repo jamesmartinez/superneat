@@ -35,6 +35,7 @@ executable superneat
                        HTTP,
                        bytestring,
                        safecopy,
-                       ixset,
                        acid-state,
-                       time
+                       time,
+                       lens,
+                       tables

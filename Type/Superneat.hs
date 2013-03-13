@@ -6,36 +6,21 @@ import Type.Common
 import Type.Pin
 import Type.User
 
-
-data Superneat = Superneat { userState :: Users 
-                           , pinState  :: Pins }
+data Superneat = Superneat { _users :: Table User 
+                           , _pins  :: Table Pin }
                  deriving (Typeable)
 
+emptySuperneat :: Superneat
+emptySuperneat = Superneat empty empty
+
+makeLenses ''Superneat
 $(deriveSafeCopy 0 'base ''Superneat)
 
-emptySuperneat :: Superneat
-emptySuperneat = Superneat noUsers noPins
 
-allPins :: Query Superneat [Pin]
-allPins = do
-    Pins{..} <- fmap pinState ask
-    return $ toList pins
+allPins :: Query Superneat (Table Pin)
+allPins = view pins
 
-newPin :: UserId -> Text -> UTCTime -> [PinCategory] -> Visibility -> Update Superneat ()
-newPin owner description date categories visibility = do
-    state <- get
-
-    let ps@Pins{..} = pinState state
-
-    let pin = Pin { pinId = nextPinId
-                  , owner = owner
-                  , description = description
-                  , date = date
-                  , categories = categories
-                  , visibility = visibility 
-                  }
-
-    put $ Superneat { pinState  = ps { nextPinId = succ nextPinId , pins = insert pin pins}
-                    , userState = userState state}
+newPin :: UserId -> Description -> UTCTime -> [PinCategory] -> Visibility -> Update Superneat ()
+newPin o d t cs v = pins %= insert (Pin 0 o d t cs v)
 
 $(makeAcidic ''Superneat [ 'allPins , 'newPin ])

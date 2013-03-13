@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, DeriveDataTypeable, GeneralizedNewtypeDeriving, RecordWildCards, TypeFamilies, EmptyDataDecls #-}
+{-# LANGUAGE TemplateHaskell, DeriveDataTypeable, TypeFamilies, GADTs, GeneralizedNewtypeDeriving #-}
 module Type.Pin where
 
 import Type.Common
@@ -9,39 +9,41 @@ newtype PinId = PinId { unPinId :: Integer }
               deriving (Eq, Ord, Num, Enum, Typeable, SafeCopy)
 
 newtype PinCategory = PinCategory Text
-                      deriving (Eq, Ord, Typeable, SafeCopy)
+                    deriving (Eq, Ord, Typeable, SafeCopy)
+
+newtype Description = Description Text
+                    deriving (Eq, Ord, Typeable, SafeCopy)
 
 data Visibility = Visible | Hidden
                 deriving (Eq, Ord)
 $(deriveSafeCopy 0 'base ''Visibility)
   
-data Pin = Pin { pinId       :: PinId
-               , owner       :: UserId
-               , description :: Text
-               , date        :: UTCTime 
-               , categories  :: [PinCategory]
-               , visibility  :: Visibility
+data Pin = Pin { _pinId       :: PinId
+               , _owner       :: UserId
+               , _description :: Description
+               , _time        :: UTCTime 
+               , _categories  :: [PinCategory]
+               , _visibility  :: Visibility
                }
          deriving (Eq, Ord, Typeable)
 
+makeLenses ''Pin
 $(deriveSafeCopy 0 'base ''Pin)
 
 
-instance Indexable Pin where
-    empty = ixSet $
-             [ ixFun $ \p -> [ pinId      p ]
-             , ixFun $ \p -> [ owner      p ]
-             , ixFun $ \p -> [ date       p ]
-             , ixFun $ \p -> [ categories p ]
-             ]
+instance Tabular Pin where
+    type PKT Pin = PinId
+    data Key k Pin b where
+        PinIdK :: Key Primary Pin PinId
+    data Tab Pin i = PinTab (i Primary PinId)
 
-data Pins = Pins { nextPinId :: PinId
-                 , pins      :: IxSet Pin }
-            deriving (Typeable)
+    fetch PinIdK = view pinId
 
-$(deriveSafeCopy 0 'base ''Pins)
+    primary = PinIdK
+    primarily PinIdK r = r
 
+    mkTab f             = PinTab <$> f PinIdK
+    forTab (PinTab x) f = PinTab <$> f PinIdK x
+    ixTab (PinTab x) PinIdK = x
 
--- Initial state
-noPins :: Pins
-noPins = Pins { nextPinId = 0, pins = empty }
+    autoTab = autoIncrement pinId
