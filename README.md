@@ -1,4 +1,4 @@
 Superneat
 ==========
 
-A Happstack App like that of Pinterest
+A superneat Happstack App like that of Pinterest
